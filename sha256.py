@@ -56,7 +56,7 @@ def Lengthwith64bit(Length):
     while i>=0:
         arr[63-i]=inbits[len(inbits)-1-i]
         i-=1
-    print(arr)
+    #print(arr)
     #collide into 8 bites:
     asBin=""
     asHex=[]
@@ -68,11 +68,11 @@ def Lengthwith64bit(Length):
             asHex.append(asBin)
             asBin=""
     #convert from binary to integer -8 bit...
-    print(asHex)
+    #print(asHex)
     asDec=[]
     for string in asHex:
         asDec.append(int(string,2))
-    #print(asDec)
+    print(asDec)
     return asDec
 
 
@@ -140,16 +140,16 @@ class Sha256:
               Matrix[column][word]=wordConverter( [ message[first], message[first+1], message[first+2], message[first+3] ] )
         #parse every object into 16, 32-bit object
         #did already while convertToBites automatically
-
+        print("resulting parsing:",Matrix)
         #return bit matrix
         return Matrix
 
 
     def hash(self, processed):
-        print(processed)
         #will be processed...
-    
-        """
+        print(processed)
+
+    """
     algorithm can be defined in two stages:
         preprocessing:
             Preprocessing involves padding a message, parsing the padded message into m-bit blocks, and setting initialization values to be used in the hash computation. 
@@ -247,5 +247,5 @@ class Sha256:
 
     ####
 
-        
-Sha256(message='mamar')
+##test
+Sha256("mamar")

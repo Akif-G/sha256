@@ -22,6 +22,7 @@
                       * https://blog.skullsecurity.org/2012/everything-you-need-to-know-about-hash-length-extension-attacks
 """
 
+
 def convertToBites(string):
     # not a part of the hashing algorithm but we will store and use bite string for explanation ease. 
     # so here to convert the strings into bitearray
@@ -34,9 +35,13 @@ def convertToBites(string):
 
 def wordConverter(arrayOfElems):
     # not a part of the hashing algorithm but we will store and use bite string for explanation ease. 
+    #takes 4 8-bit and converts to 32 bits.
     collided=0
     for elem in arrayOfElems:
-        collided=collided*(2**8)+elem
+      #print("\te:",elem)
+      collided=collided*(2**8)+elem
+      #print("\t->",bin(elem),"\t->:",bin(collided))
+    #print("c:",collided)
     return collided
 
 def Lengthwith64bit(Length):
@@ -51,25 +56,24 @@ def Lengthwith64bit(Length):
     while i>=0:
         arr[63-i]=inbits[len(inbits)-1-i]
         i-=1
+    print(arr)
     #collide into 8 bites:
     asBin=""
     asHex=[]
     for j in range(64):
         if (j+1)%8!=0:
-            asBin+=str(arr[i])
+            asBin+=str(arr[j])
         else:
-            asBin+=str(arr[i])
+            asBin+=str(arr[j])
             asHex.append(asBin)
             asBin=""
     #convert from binary to integer -8 bit...
+    print(asHex)
     asDec=[]
     for string in asHex:
         asDec.append(int(string,2))
+    #print(asDec)
     return asDec
-
-
-
-
 
 
 
@@ -82,9 +86,10 @@ class Sha256:
 
         # Timeline of the processes:
         padded=self.padding(message,salt)
+        #print("pad:",padded)
         parsed=self.parsing(padded)
+        #print(parsed)
         self.sha256=self.hash(parsed)
-
 
     def padding(self, message=None, salt=None):
         """
@@ -96,15 +101,17 @@ class Sha256:
         
         #convert to bits (As list/array)
         if salt is not None:
-            message=salt+message
+          message=salt+message
         bites=convertToBites(message)
-    
+        #print("message",message)
+        #print("inbits: " , bites)
         #add 1 to it
         bites.append(int('10000000',2))
         Length=len(bites)-1
         #add "0" for smallest, non-negative number; while L = 448 mod(512),since last 64 is for length... 
         while (len(bites)*8)%512 !=448:
             bites.append(0)
+        print("appended 0: " , bites,"\nLength",len(bites))
         #append the length of the message, in bites
         #note that: we used bin() to ease since there is no contribution of it for the understanding of the problem...
         #after converting it to bin we will know how many 0 we also need to use:
@@ -112,6 +119,7 @@ class Sha256:
         LenghtArray=Lengthwith64bit(Length)
         for i in LenghtArray:
             bites.append(i)
+        print('with length: ',len(bites),'\nresulting padding:',bites)
         #return bites
         return bites
 
@@ -121,19 +129,21 @@ class Sha256:
         where any M(n) is expressed as sixteen 32-bit words, the first 32 bits of message block i are denoted M(0(i)), the next 32 bits are M(n(i)) , and so on up to M(15(i)).
         """
         #create 512 bit objects as Matrix , which any object includes 32 bites
-        width=int(512/32)
-        heigth= int(len(message)/512)
-        Matrix = [[0 for x in range(width)] for y in range(heigth)] 
+        width=int(512/32) #actually 16, as we previously described
+        height= int((len(message)*8)/512)
+        print("width:",width,"\theight:",height)
+        Matrix = [[0 for x in range(width)] for y in range(height)] 
         #here we need to implement a conversion since our word length was 8 bites(bytes) in convertTobites...
         for column in range(len(Matrix)):
             for word in range(len(Matrix[column])):
-                first=(column*16+word)*4
-                Matrix[column][word]=wordConverter( [ message[first], message[first+1], message[first+2], message[first+3] ] )
+              first=(column*16+word)*4
+              Matrix[column][word]=wordConverter( [ message[first], message[first+1], message[first+2], message[first+3] ] )
         #parse every object into 16, 32-bit object
         #did already while convertToBites automatically
 
         #return bit matrix
         return Matrix
+
 
     def hash(self, processed):
         print(processed)
@@ -238,5 +248,4 @@ class Sha256:
     ####
 
         
-print(type('mamar'))
 Sha256(message='mamar')

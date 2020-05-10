@@ -282,7 +282,19 @@ class Sha256:
             h=  H(7)
             
             #Perform The Main Hash computation
-            #lala lupsi            
+
+            for t in range(64):
+                T1 = h + BSIG1(e) + CH(e,f,g) + Kt + Wt
+                T2 = BSIG0(a) + MAJ(a,b,c)
+                h = g
+                g = f
+                f = e
+                e = d + T1
+                d = c
+                c = b
+                b = a
+                a = T1 + T2            
+
 
             #Compute the intermediate hash value H(i):
             H(0)= a + H(0)

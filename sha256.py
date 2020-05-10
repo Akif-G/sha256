@@ -7,8 +7,9 @@
               SHA-256 is one of the three algorithms in the SHA2
               specification. The others, SHA-384 and SHA-512, are not
               offered in this implementation.
-              Algorithm specification can be found here:
-               * http://csrc.nist.gov/publications/fips/fips180-2/fips180-2withchangenotice.pdf     
+              For a better vision; Algorithm specification can be found here:
+               * http://csrc.nist.gov/publications/fips/fips180-2/fips180-2withchangenotice.pdf 
+
               Used Wikipedia as a source Of Pseudocode :
                * https://en.wikipedia.org/wiki/SHA-2#Pseudocode
 
@@ -79,6 +80,17 @@ def Lengthwith64bit(Length):
 
 class Sha256:
 
+    """
+    algorithm can be defined in two stages:
+        preprocessing:
+            Preprocessing involves padding a message, parsing the padded message into m-bit blocks, and setting initialization values to be used in the hash computation. 
+        
+        hash computation:
+            The hash computation generates a message schedule from the padded message and uses that schedule, along with functions, constants, and word operations to iteratively generate a series of hash values.
+    """
+
+    ###         PreProcessing           ###
+
     def __init__(self, message, salt=None):
         if message is not None:
             if type(message) is not str:
@@ -93,8 +105,9 @@ class Sha256:
 
     def padding(self, message=None, salt=None):
         """
-        The purpose of this padding is to ensure that the padded message is a multiple of 512 bits.
-        For this padding, as a standart, message needs to have length 0<=L<2^64.
+        MD-compliant padding:
+            The purpose of this padding is to ensure that the padded message is a multiple of 512 bits.
+            For this padding, as a standart, message needs to have length 0<=L<2^64.
         """
         if len(message)>=(2**64):
             raise ValueError('for padding, message length needs to be less than 2**64')
@@ -140,66 +153,16 @@ class Sha256:
               Matrix[column][word]=wordConverter( [ message[first], message[first+1], message[first+2], message[first+3] ] )
         #parse every object into 16, 32-bit object
         #did already while convertToBites automatically
-        print("resulting parsing:",Matrix)
+        print("resulting parsing:")
+        for i in Matrix:
+          print(i)
         #return bit matrix
         return Matrix
 
-
-    def hash(self, processed):
-        #will be processed...
-        print(processed)
-
-    """
-    algorithm can be defined in two stages:
-        preprocessing:
-            Preprocessing involves padding a message, parsing the padded message into m-bit blocks, and setting initialization values to be used in the hash computation. 
-        
-        hash computation:
-            The hash computation generates a message schedule from the padded message and uses that schedule, along with functions, constants, and word operations to iteratively generate a series of hash values.
-    """
-
-
-    #Constants and H(0) : will be used in Hash Processing.
-    #these can not be changed, offered by NSA: 
-    """ 
-    constants: These words represent the first thirty-two bits of the fractional parts of the cube roots of the first sixtyfour prime numbers,in hex. See below:
+    ###         Hash Computation           ###
     
-    primes:
-        2	3	5	7	11	13	17	19	23	29	31	37	41	43	47	53	59	61	67	71
-        73	79	83	89	97	101	103	107	109	113	127	131	137	139	149	151	157	163	167	173
-        179	181	191	193	197	199	211	223	227	229	233	239	241	251	257	263	269	271	277	281
-        283	293	307	311  
-    """
-    consts = (0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5,
-                0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
-                0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3,
-                0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
-                0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc,
-                0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
-                0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7,
-                0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
-                0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13,
-                0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
-                0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3,
-                0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
-                0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5,
-                0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
-                0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208,
-                0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2)
-
-    """
-    For SHA-256, the initial hash value, H(0), consists of the following eight 32-bit words, in hex.  These words were obtained by taking the first thirty-two bits of the fractional parts of the square roots of the first eight prime numbers.
-    primes:
-        2	3	5	7	11	13	17	19
-    """
-
-    inithashvals = (0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a,
-            0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19)
-
-    
-    ####
-
-    ##MACRO FUNCTIONS
+    ##  MACRO FUNCTIONS
+    # these functions are going to be used in hashing process. They are not a part of the Hashing algorithm, but Can be assumed as core elements of Sha256 
     block_size = 64
     digest_size = 32
 
@@ -229,23 +192,108 @@ class Sha256:
         except:
             raise ValueError('n should be less than 32 in sha256 for RotateRight %s()'%(n))
 
-    def EP0(n,x):
+    def BSIG0(n,x):
         # BSIG0(x) = ROTR^2(x) XOR ROTR^13(x) XOR ROTR^22(x)
         return ROTR(2,x) ^ROTR(13,x)^ROTR(22,x)
 
-    def EP1(n,x):
+    def BSIG0(n,x):
         # BSIG0(x) = ROTR^6(x) XOR ROTR^11(x) XOR ROTR^25(x)
         return ROTR(6,x) ^ROTR(11,x)^ROTR(25,x)
     
-    def SIG0(n,x):
+    def SSIG0(n,x):
         # SSIG0(x) = ROTR^7(x) XOR ROTR^18(x) XOR SHR^3(x)
         return ROTR(7,x) ^ROTR(18,x)^SHR(3,x)
     
-    def SIG1(n,x):
+    def SSIG1(n,x):
         # SSIG1(x) = ROTR^17(x) XOR ROTR^19(x) XOR SHR^10(x)
         return ROTR(17,x) ^ROTR(19,x)^SHR(10,x)
 
-    ####
+    ##
+    ##
+
+    #Constants and H(0) : will be used in Hash Processing.
+    #these can not be changed, offered by NSA: 
+    """ 
+    constants: These words represent the first thirty-two bits of the fractional parts of the cube roots of the first sixtyfour prime numbers,in hex. See below:
+    
+    primes:
+        2	3	5	7	11	13	17	19	23	29	31	37	41	43	47	53	59	61	67	71
+        73	79	83	89	97	101	103	107	109	113	127	131	137	139	149	151	157	163	167	173
+        179	181	191	193	197	199	211	223	227	229	233	239	241	251	257	263	269	271	277	281
+        283	293	307	311  
+    """
+    _consts = [0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5,
+                0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
+                0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3,
+                0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
+                0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc,
+                0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
+                0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7,
+                0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
+                0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13,
+                0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
+                0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3,
+                0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
+                0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5,
+                0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
+                0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208,
+                0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2]
+
+    """
+    For SHA-256, the initial hash value, H(0), consists of the following eight 32-bit words, in hex.  These words were obtained by taking the first thirty-two bits of the fractional parts of the square roots of the first eight prime numbers.
+    primes:
+        2	3	5	7	11	13	17	19
+    """
+
+    initialHashValues = [0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a,
+            0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19]
+
+    ##
+    ##
+
+    #Hashing algorithm that uses Macro Functions
+    def hash(self, preprocessed):
+        """
+        Merkle–Damgard construction:
+            Merkle Damgard construction is an hashing algorithm that builds collision resistant hash fuctions.
+        
+        """
+        #for ease transfer the values of inital hashvalues to Array, which we also use both intermediate, and final values...
+        H=initialHashValues
+        
+        #preprocessed ( as array ) contains N many, 512-Bit structure (every particular one of them defined as "M" here). M contains 16 many 32-bit words.
+        for M in preprocessed: 
+            #preparing the Message Schedule W 
+            W=[0 for words in range(64)]
+            for i in range(len(W)):
+                if i <16:   #0 to 15
+                    W[i]=M[i]
+                else:   #15 to 63
+                    W[i]=SSIG1(W(i-2)) + W(i-7) + SSIG0(i-15) + W(i-16)
+            
+            #initialize 8 working variables , mentioned as a,b,c,d,e,f,g,h
+            a=  H(0)
+            b=  H(1)
+            c=  H(2)
+            d=  H(3)
+            e=  H(4)
+            f=  H(5)
+            g=  H(6)
+            h=  H(7)
+            
+            #Perform The Main Hash computation
+            #lala lupsi            
+
+            #Compute the intermediate hash value H(i):
+            H(0)= a + H(0)
+            H(1)= b + H(1)
+            H(2)= c + H(2
+            H(3)= d + H(3)
+            H(4)= e + H(4)
+            H(5)= f + H(5)
+            H(6)= g + H(6)
+            H(7)= h + H(7)
+
 
 ##test
-Sha256("mamar")
+Sha256("Lorem ipsum dolor sit amet, sapien purus metus eiusmod. Volutpat nunc neque nam. Velit ac, lacinia arcu mauris vestibulum nunc veniam odio, vitae cras mauris, nascetur felis cursus, euismod aliquam scelerisque eros ligula lorem. Adipisci id nullam at egestas egestas, dui nonummy aliquam massa est, erat ut et velit vestibulum, nec et rutrum, leo sem. Hymenaeos dolor lacus malesuada orci pede, semper sed donec purus ut consectetuer, odio consequat ut lectus alias proin. Aliquam ipsum rutrum a dui est. Praesent vestibulum euismod.")

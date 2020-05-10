@@ -39,9 +39,9 @@ def wordConverter(arrayOfElems):
     #takes 4 8-bit and converts to 32 bits.
     collided=0
     for elem in arrayOfElems:
-      #print("\te:",elem)
+      print("\te:",elem)
       collided=collided*(2**8)+elem
-      #print("\t->",bin(elem),"\t->:",bin(collided))
+      print("\t->",bin(elem),"\t->:",bin(collided))
     #print("c:",collided)
     return collided
 
@@ -78,6 +78,56 @@ def Lengthwith64bit(Length):
 
 
 
+###          MACRO FUNCTIONS         ####
+
+# these functions are going to be used in hashing process. They are not a part of the Hashing algorithm, but Can be assumed as core elements of Sha256 
+block_size = 64
+digest_size = 32
+
+def CH(x,y,z):
+    # choose( x, y, z) = (x AND y) XOR ( (NOT x) AND z)
+    # for each bit index, that result bit is according to the majority of the 3 inputs bits for x y and z at this index.
+    return (x & y ^( (~x) & z ) )
+
+def MAJ( x, y, z):
+    # majority( x, y, z) = (x AND y) XOR (x AND z) XOR (y AND z)
+    # as the x input chooses if the output is from y or from z. More precisely, for each bit index, that result bit is according to the bit from y (or respectively z ) at this index, depending on if the bit from x at this index is 1 (or respectively 0).
+    return (x & y) ^ (x & z) ^ (y & z)
+
+def ROTR(n,x):
+    # rotateRight(n,x)=(x >> n) v (x << w - n). where w is digest_size  
+    # equivalent to a circular shift (rotation) of x by n positions to the right. 
+    try:
+        return (x>>n) | (x<<(32-n)) #32=digest_size can be implemented as an input vice versa
+    except:
+        raise ValueError( 'n should be less than 32 in sha256 for RotateRight %s()'%(n))
+
+def SHR(n,x):
+    # SHR^n(x) = x>>n
+    # The right shift operation SHR^n(x), where x is a w-bit (digest_size) word and n is an integer with 0 <= n < w.
+    try:
+        return (x>>n)
+    except:
+        raise ValueError('n should be less than 32 in sha256 for RotateRight %s()'%(n))
+
+def BSIG0(x):
+    # BSIG0(x) = ROTR^2(x) XOR ROTR^13(x) XOR ROTR^22(x)
+    return ROTR(2,x) ^ROTR(13,x)^ROTR(22,x)
+
+def BSIG1(x):
+    # BSIG1(x) = ROTR^6(x) XOR ROTR^11(x) XOR ROTR^25(x)
+    return ROTR(6,x) ^ROTR(11,x)^ROTR(25,x)
+
+def SSIG0(x):
+    # SSIG0(x) = ROTR^7(x) XOR ROTR^18(x) XOR SHR^3(x)
+    return ROTR(7,x) ^ROTR(18,x)^SHR(3,x)
+
+def SSIG1(x):
+    # SSIG1(x) = ROTR^17(x) XOR ROTR^19(x) XOR SHR^10(x)
+    return ROTR(17,x) ^ROTR(19,x)^SHR(10,x)
+
+
+
 class Sha256:
 
     """
@@ -101,6 +151,51 @@ class Sha256:
         #print("pad:",padded)
         parsed=self.parsing(padded)
         #print(parsed)
+
+        ##
+        ##
+
+        #Constants and H(0) : will be used in Hash Processing.
+        #these can not be changed, offered by NSA: 
+        """ 
+        constants: These words represent the first thirty-two bits of the fractional parts of the cube roots of the first sixtyfour prime numbers,in hex. See below:
+        
+        primes:
+            2	3	5	7	11	13	17	19	23	29	31	37	41	43	47	53	59	61	67	71
+            73	79	83	89	97	101	103	107	109	113	127	131	137	139	149	151	157	163	167	173
+            179	181	191	193	197	199	211	223	227	229	233	239	241	251	257	263	269	271	277	281
+            283	293	307	311  
+        """
+        self._K = [0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5,
+                    0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
+                    0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3,
+                    0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
+                    0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc,
+                    0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
+                    0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7,
+                    0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
+                    0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13,
+                    0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
+                    0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3,
+                    0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
+                    0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5,
+                    0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
+                    0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208,
+                    0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2]
+
+        """
+        For SHA-256, the initial hash value, H(0), consists of the following eight 32-bit words, in hex.  These words were obtained by taking the first thirty-two bits of the fractional parts of the square roots of the first eight prime numbers.
+        primes:
+            2	3	5	7	11	13	17	19
+        """
+
+        self.initialHashValues = [0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a,
+                0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19]
+
+        ##
+        ##
+
+
         self.sha256=self.hash(parsed)
 
     def padding(self, message=None, salt=None):
@@ -117,10 +212,10 @@ class Sha256:
           message=salt+message
         bites=convertToBites(message)
         #print("message",message)
-        #print("inbits: " , bites)
+        print("inbits: " , bites)
         #add 1 to it
+        Length=len(bites)*8 #since our input was consisted by 8-bits bytes (string)
         bites.append(int('10000000',2))
-        Length=len(bites)-1
         #add "0" for smallest, non-negative number; while L = 448 mod(512),since last 64 is for length... 
         while (len(bites)*8)%512 !=448:
             bites.append(0)
@@ -160,96 +255,6 @@ class Sha256:
         return Matrix
 
     ###         Hash Computation           ###
-    
-    ##  MACRO FUNCTIONS
-    # these functions are going to be used in hashing process. They are not a part of the Hashing algorithm, but Can be assumed as core elements of Sha256 
-    block_size = 64
-    digest_size = 32
-
-    def CH(x,y,z):
-        # choose( x, y, z) = (x AND y) XOR ( (NOT x) AND z)
-        # for each bit index, that result bit is according to the majority of the 3 inputs bits for x y and z at this index.
-        return (x & y ^( (~x) & z ) )
-
-    def MAJ( x, y, z):
-        # majority( x, y, z) = (x AND y) XOR (x AND z) XOR (y AND z)
-        # as the x input chooses if the output is from y or from z. More precisely, for each bit index, that result bit is according to the bit from y (or respectively z ) at this index, depending on if the bit from x at this index is 1 (or respectively 0).
-        return (x & y) ^ (x & z) ^ (y & z)
-    
-    def ROTR(n,x):
-        # rotateRight(n,x)=(x >> n) v (x << w - n). where w is digest_size  
-        # equivalent to a circular shift (rotation) of x by n positions to the right. 
-        try:
-            return (x>>n) | (x<<(32-n)) #32=digest_size can be implemented as an input vice versa
-        except:
-            raise ValueError( 'n should be less than 32 in sha256 for RotateRight %s()'%(n))
-    
-    def SHR(n,x):
-        # SHR^n(x) = x>>n
-        # The right shift operation SHR^n(x), where x is a w-bit (digest_size) word and n is an integer with 0 <= n < w.
-        try:
-            return (x>>n)
-        except:
-            raise ValueError('n should be less than 32 in sha256 for RotateRight %s()'%(n))
-
-    def BSIG0(n,x):
-        # BSIG0(x) = ROTR^2(x) XOR ROTR^13(x) XOR ROTR^22(x)
-        return ROTR(2,x) ^ROTR(13,x)^ROTR(22,x)
-
-    def BSIG0(n,x):
-        # BSIG0(x) = ROTR^6(x) XOR ROTR^11(x) XOR ROTR^25(x)
-        return ROTR(6,x) ^ROTR(11,x)^ROTR(25,x)
-    
-    def SSIG0(n,x):
-        # SSIG0(x) = ROTR^7(x) XOR ROTR^18(x) XOR SHR^3(x)
-        return ROTR(7,x) ^ROTR(18,x)^SHR(3,x)
-    
-    def SSIG1(n,x):
-        # SSIG1(x) = ROTR^17(x) XOR ROTR^19(x) XOR SHR^10(x)
-        return ROTR(17,x) ^ROTR(19,x)^SHR(10,x)
-
-    ##
-    ##
-
-    #Constants and H(0) : will be used in Hash Processing.
-    #these can not be changed, offered by NSA: 
-    """ 
-    constants: These words represent the first thirty-two bits of the fractional parts of the cube roots of the first sixtyfour prime numbers,in hex. See below:
-    
-    primes:
-        2	3	5	7	11	13	17	19	23	29	31	37	41	43	47	53	59	61	67	71
-        73	79	83	89	97	101	103	107	109	113	127	131	137	139	149	151	157	163	167	173
-        179	181	191	193	197	199	211	223	227	229	233	239	241	251	257	263	269	271	277	281
-        283	293	307	311  
-    """
-    _consts = [0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5,
-                0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
-                0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3,
-                0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
-                0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc,
-                0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
-                0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7,
-                0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
-                0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13,
-                0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
-                0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3,
-                0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
-                0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5,
-                0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
-                0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208,
-                0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2]
-
-    """
-    For SHA-256, the initial hash value, H(0), consists of the following eight 32-bit words, in hex.  These words were obtained by taking the first thirty-two bits of the fractional parts of the square roots of the first eight prime numbers.
-    primes:
-        2	3	5	7	11	13	17	19
-    """
-
-    initialHashValues = [0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a,
-            0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19]
-
-    ##
-    ##
 
     #Hashing algorithm that uses Macro Functions
     def hash(self, preprocessed):
@@ -259,8 +264,8 @@ class Sha256:
         
         """
         #for ease transfer the values of inital hashvalues to Array, which we also use both intermediate, and final values...
-        H=initialHashValues
-        
+        H=self.initialHashValues
+        numberofIters=0
         #preprocessed ( as array ) contains N many, 512-Bit structure (every particular one of them defined as "M" here). M contains 16 many 32-bit words.
         for M in preprocessed: 
             #preparing the Message Schedule W 
@@ -269,22 +274,23 @@ class Sha256:
                 if i <16:   #0 to 15
                     W[i]=M[i]
                 else:   #15 to 63
-                    W[i]=SSIG1(W(i-2)) + W(i-7) + SSIG0(i-15) + W(i-16)
+                    W[i]=SSIG1(W[i-2]) + W[i-7] + SSIG0(i-15) + W[i-16]
             
             #initialize 8 working variables , mentioned as a,b,c,d,e,f,g,h
-            a=  H(0)
-            b=  H(1)
-            c=  H(2)
-            d=  H(3)
-            e=  H(4)
-            f=  H(5)
-            g=  H(6)
-            h=  H(7)
-            
+            a=  H[ 0 ]
+            b=  H[ 1 ]
+            c=  H[ 2 ]
+            d=  H[ 3 ]
+            e=  H[ 4 ]
+            f=  H[ 5 ]
+            g=  H[ 6 ]
+            h=  H[ 7 ]
+
+
             #Perform The Main Hash computation
 
             for t in range(64):
-                T1 = h + BSIG1(e) + CH(e,f,g) + Kt + Wt
+                T1 = h + BSIG1(e) + CH(e,f,g) + self._K[t] + W[t]
                 T2 = BSIG0(a) + MAJ(a,b,c)
                 h = g
                 g = f
@@ -294,18 +300,26 @@ class Sha256:
                 c = b
                 b = a
                 a = T1 + T2            
-
+                print(numberofIters, hex(a),hex(b),hex(c),hex(d),hex(e),hex(f),hex(g),hex(h))
+                numberofIters+=1
 
             #Compute the intermediate hash value H(i):
-            H(0)= a + H(0)
-            H(1)= b + H(1)
-            H(2)= c + H(2
-            H(3)= d + H(3)
-            H(4)= e + H(4)
-            H(5)= f + H(5)
-            H(6)= g + H(6)
-            H(7)= h + H(7)
+            H[ 0 ]= a+  H[ 0 ]
+            H[ 1 ]= b+  H[ 1 ]
+            H[ 2 ]= c+  H[ 2 ]
+            H[ 3 ]= d+  H[ 3 ]
+            H[ 4 ]= e+  H[ 4 ]
+            H[ 5 ]= f+  H[ 5 ]
+            H[ 6 ]= g+  H[ 6 ]
+            H[ 7 ]= h+  H[ 7 ]
 
-
+        #After the above computations have been sequentially performed for all of the blocks in the message, the final output is calculated.
+        asHex=[0 for i in range(len(H))]
+        for e in range(len(H)):
+            asHex[e]=hex(H[e])
+        return asHex
+ 
 ##test
-Sha256("Lorem ipsum dolor sit amet, sapien purus metus eiusmod. Volutpat nunc neque nam. Velit ac, lacinia arcu mauris vestibulum nunc veniam odio, vitae cras mauris, nascetur felis cursus, euismod aliquam scelerisque eros ligula lorem. Adipisci id nullam at egestas egestas, dui nonummy aliquam massa est, erat ut et velit vestibulum, nec et rutrum, leo sem. Hymenaeos dolor lacus malesuada orci pede, semper sed donec purus ut consectetuer, odio consequat ut lectus alias proin. Aliquam ipsum rutrum a dui est. Praesent vestibulum euismod.")
+test=Sha256("abc")
+for i in test.sha256:
+  print(i)

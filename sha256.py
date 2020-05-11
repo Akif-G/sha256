@@ -9,6 +9,8 @@
               offered in this implementation.
               For a better vision; Algorithm specification can be found here:
                * http://csrc.nist.gov/publications/fips/fips180-2/fips180-2withchangenotice.pdf 
+              with some explanation:
+               * https://tools.ietf.org/html/rfc4634#section-6.2
 
               Used Wikipedia as a source Of Pseudocode :
                * https://en.wikipedia.org/wiki/SHA-2#Pseudocode
@@ -23,7 +25,7 @@
                       * https://blog.skullsecurity.org/2012/everything-you-need-to-know-about-hash-length-extension-attacks
 """
 
-
+### Useful functions for bit/byte/binary/decimal/hexadecimal operations  ###
 def convertToBites(string):
     # not a part of the hashing algorithm but we will store and use bite string for explanation ease. 
     # so here to convert the strings into bitearray
@@ -41,7 +43,7 @@ def wordConverter(arrayOfElems):
     for elem in arrayOfElems:
       print("\te:",elem)
       collided=collided*(2**8)+elem
-      print("\t->",bin(elem),"\t->:",bin(collided))
+      print("\t\t->",bin(elem),"\t->:",bin(collided))
     #print("c:",collided)
     return collided
 
@@ -78,7 +80,7 @@ def Lengthwith64bit(Length):
 
 
 
-###          MACRO FUNCTIONS         ####
+###          MACRO FUNCTIONS            ####
 
 # these functions are going to be used in hashing process. They are not a part of the Hashing algorithm, but Can be assumed as core elements of Sha256 
 block_size = 64
@@ -98,7 +100,7 @@ def ROTR(n,x):
     # rotateRight(n,x)=(x >> n) v (x << w - n). where w is digest_size  
     # equivalent to a circular shift (rotation) of x by n positions to the right. 
     try:
-        return (x>>n) | (x<<(32-n)) #32=digest_size can be implemented as an input vice versa
+        return (x>>n) | (x<<(32-n)) & 0xFFFFFFFF #32=digest_size can be implemented as an input vice versa
     except:
         raise ValueError( 'n should be less than 32 in sha256 for RotateRight %s()'%(n))
 
@@ -129,7 +131,6 @@ def SSIG1(x):
 
 
 class Sha256:
-
     """
     algorithm can be defined in two stages:
         preprocessing:
@@ -191,10 +192,8 @@ class Sha256:
 
         self.initialHashValues = [0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a,
                 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19]
-
         ##
         ##
-
 
         self.sha256=self.hash(parsed)
 
@@ -261,7 +260,9 @@ class Sha256:
         """
         Merkle–Damgard construction:
             Merkle Damgard construction is an hashing algorithm that builds collision resistant hash fuctions.
-        
+            Note that:
+             * In some parts of the implementation here you will see ( & 0xFFFFFFFF ), this is implemented since we only want 8decimal, with overflows...
+             * since digest_size -word length in bits- is 32 bits. 32bit=2^32=16^8, so we need 8 decimals in hexadecimals.
         """
         #for ease transfer the values of inital hashvalues to Array, which we also use both intermediate, and final values...
         H=self.initialHashValues
@@ -274,7 +275,7 @@ class Sha256:
                 if i <16:   #0 to 15
                     W[i]=M[i]
                 else:   #15 to 63
-                    W[i]=SSIG1(W[i-2]) + W[i-7] + SSIG0(i-15) + W[i-16]
+                    W[i]=SSIG1(W[i-2]) + W[i-7] + SSIG0(W[i-15]) + W[i-16] & 0xFFFFFFFF
             
             #initialize 8 working variables , mentioned as a,b,c,d,e,f,g,h
             a=  H[ 0 ]
@@ -295,12 +296,12 @@ class Sha256:
                 h = g
                 g = f
                 f = e
-                e = d + T1
+                e = d + T1  & 0xFFFFFFFF
                 d = c
                 c = b
                 b = a
-                a = T1 + T2            
-                print(numberofIters, hex(a),hex(b),hex(c),hex(d),hex(e),hex(f),hex(g),hex(h))
+                a = T1 + T2  & 0xFFFFFFFF    
+                print(numberofIters,":\t", hex(a),hex(b),hex(c),hex(d),hex(e),hex(f),hex(g),hex(h))
                 numberofIters+=1
 
             #Compute the intermediate hash value H(i):
@@ -316,10 +317,14 @@ class Sha256:
         #After the above computations have been sequentially performed for all of the blocks in the message, the final output is calculated.
         asHex=[0 for i in range(len(H))]
         for e in range(len(H)):
-            asHex[e]=hex(H[e])
+            asHex[e]=hex(H[e]& 0xFFFFFFFF) 
         return asHex
  
 ##test
 test=Sha256("abc")
 for i in test.sha256:
+  print(i)
+print("\t**********************************************************************************************************")
+test2=Sha256("abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq")
+for i in test2.sha256:
   print(i)

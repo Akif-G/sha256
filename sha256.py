@@ -268,12 +268,12 @@ class Sha256:
         H=self.initialHashValues.copy()
         messageBlocks=[]
         #preprocessed ( as array ) contains N many, 512-Bit structure (every particular one of them defined as "M" here). M contains 16 many 32-bit words.
-        for M in preprocessed: 
+        for M in range(len(preprocessed)): 
             #preparing the Message Schedule W 
             W=[0 for words in range(64)]
             for i in range(len(W)):
                 if i <16:   #0 to 15
-                    W[i]=M[i]
+                    W[i]=preprocessed[M][i]
                 else:   #15 to 63
                     W[i]=SSIG1(W[i-2]) + W[i-7] + SSIG0(W[i-15]) + W[i-16] & 0xFFFFFFFF
             
@@ -298,18 +298,19 @@ class Sha256:
                 d = c
                 c = b
                 b = a
-                a = T1 + T2  & 0xFFFFFFFF    
+                a = T1 + T2  & 0xFFFFFFFF  
+
                 print(t,":\t", hex(a),hex(b),hex(c),hex(d),hex(e),hex(f),hex(g),hex(h))
 
             #Compute the intermediate hash value H(i):
-            H[ 0 ]= a + H[ 0 ]
-            H[ 1 ]= b + H[ 1 ]
-            H[ 2 ]= c + H[ 2 ]
-            H[ 3 ]= d + H[ 3 ]
-            H[ 4 ]= e + H[ 4 ]
-            H[ 5 ]= f + H[ 5 ]
-            H[ 6 ]= g + H[ 6 ]
-            H[ 7 ]= h + H[ 7 ]
+            H[ 0 ]= a + H[ 0 ] &0xFFFFFFFF  
+            H[ 1 ]= b + H[ 1 ] &0xFFFFFFFF  
+            H[ 2 ]= c + H[ 2 ] &0xFFFFFFFF  
+            H[ 3 ]= d + H[ 3 ] &0xFFFFFFFF
+            H[ 4 ]= e + H[ 4 ] &0xFFFFFFFF
+            H[ 5 ]= f + H[ 5 ] &0xFFFFFFFF
+            H[ 6 ]= g + H[ 6 ] &0xFFFFFFFF
+            H[ 7 ]= h + H[ 7 ] &0xFFFFFFFF
 
             messageBlocks.append(H.copy())
         #After the above computations have been sequentially performed for all of the blocks in the message, the final output is calculated.
@@ -317,10 +318,8 @@ class Sha256:
         lastHash=messageBlocks[len(messageBlocks)-1]
         asHex=[0 for i in range(len(lastHash))]
         #for print as hex
-
-
         for e in range(len(lastHash)):
-            asHex[e]=hex(lastHash[e]& 0xFFFFFFFF) 
+            asHex[e]=hex(lastHash[e]) 
         return asHex
  
 ##test
@@ -328,6 +327,6 @@ test=Sha256("abc")
 for i in test.sha256:
   print(i)
 print("\t**********************************************************************************************************")
-test2=Sha256("abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq")
+test2=Sha256("abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnjjjjopqabcdbcdecdefdefgefghfghighipppyjhijkijkljkllllmklmnlmnomnopnopq")
 for i in test2.sha256:
   print(i)

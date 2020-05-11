@@ -41,9 +41,9 @@ def wordConverter(arrayOfElems):
     #takes 4 8-bit and converts to 32 bits.
     collided=0
     for elem in arrayOfElems:
-      print("\te:",elem)
+      #print("\te:",elem)
       collided=collided*(2**8)+elem
-      print("\t\t->",bin(elem),"\t->:",bin(collided))
+      #print("\t\t->",bin(elem),"\t->:",bin(collided))
     #print("c:",collided)
     return collided
 
@@ -265,8 +265,8 @@ class Sha256:
              * since digest_size -word length in bits- is 32 bits. 32bit=2^32=16^8, so we need 8 decimals in hexadecimals.
         """
         #for ease transfer the values of inital hashvalues to Array, which we also use both intermediate, and final values...
-        H=self.initialHashValues
-        numberofIters=0
+        H=self.initialHashValues.copy()
+        messageBlocks=[]
         #preprocessed ( as array ) contains N many, 512-Bit structure (every particular one of them defined as "M" here). M contains 16 many 32-bit words.
         for M in preprocessed: 
             #preparing the Message Schedule W 
@@ -287,9 +287,7 @@ class Sha256:
             g=  H[ 6 ]
             h=  H[ 7 ]
 
-
             #Perform The Main Hash computation
-
             for t in range(64):
                 T1 = h + BSIG1(e) + CH(e,f,g) + self._K[t] + W[t]
                 T2 = BSIG0(a) + MAJ(a,b,c)
@@ -301,23 +299,28 @@ class Sha256:
                 c = b
                 b = a
                 a = T1 + T2  & 0xFFFFFFFF    
-                print(numberofIters,":\t", hex(a),hex(b),hex(c),hex(d),hex(e),hex(f),hex(g),hex(h))
-                numberofIters+=1
+                print(t,":\t", hex(a),hex(b),hex(c),hex(d),hex(e),hex(f),hex(g),hex(h))
 
             #Compute the intermediate hash value H(i):
-            H[ 0 ]= a+  H[ 0 ]
-            H[ 1 ]= b+  H[ 1 ]
-            H[ 2 ]= c+  H[ 2 ]
-            H[ 3 ]= d+  H[ 3 ]
-            H[ 4 ]= e+  H[ 4 ]
-            H[ 5 ]= f+  H[ 5 ]
-            H[ 6 ]= g+  H[ 6 ]
-            H[ 7 ]= h+  H[ 7 ]
+            H[ 0 ]= a + H[ 0 ]
+            H[ 1 ]= b + H[ 1 ]
+            H[ 2 ]= c + H[ 2 ]
+            H[ 3 ]= d + H[ 3 ]
+            H[ 4 ]= e + H[ 4 ]
+            H[ 5 ]= f + H[ 5 ]
+            H[ 6 ]= g + H[ 6 ]
+            H[ 7 ]= h + H[ 7 ]
 
+            messageBlocks.append(H.copy())
         #After the above computations have been sequentially performed for all of the blocks in the message, the final output is calculated.
-        asHex=[0 for i in range(len(H))]
-        for e in range(len(H)):
-            asHex[e]=hex(H[e]& 0xFFFFFFFF) 
+        print(messageBlocks)
+        lastHash=messageBlocks[len(messageBlocks)-1]
+        asHex=[0 for i in range(len(lastHash))]
+        #for print as hex
+
+
+        for e in range(len(lastHash)):
+            asHex[e]=hex(lastHash[e]& 0xFFFFFFFF) 
         return asHex
  
 ##test

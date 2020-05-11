@@ -71,11 +71,10 @@ def Lengthwith64bit(Length):
             asHex.append(asBin)
             asBin=""
     #convert from binary to integer -8 bit...
-    #print(asHex)
     asDec=[]
     for string in asHex:
         asDec.append(int(string,2))
-    print(asDec)
+    #print(asDec)
     return asDec
 
 
@@ -211,14 +210,14 @@ class Sha256:
           message=salt+message
         bites=convertToBites(message)
         #print("message",message)
-        print("inbits: " , bites)
+        #print("inbits: " , bites)
         #add 1 to it
         Length=len(bites)*8 #since our input was consisted by 8-bits bytes (string)
         bites.append(int('10000000',2))
         #add "0" for smallest, non-negative number; while L = 448 mod(512),since last 64 is for length... 
         while (len(bites)*8)%512 !=448:
             bites.append(0)
-        print("appended 0: " , bites,"\nLength",len(bites))
+        #print("appended 0: " , bites,"\nLength",len(bites))
         #append the length of the message, in bites
         #note that: we used bin() to ease since there is no contribution of it for the understanding of the problem...
         #after converting it to bin we will know how many 0 we also need to use:
@@ -226,7 +225,8 @@ class Sha256:
         LenghtArray=Lengthwith64bit(Length)
         for i in LenghtArray:
             bites.append(i)
-        print('with length: ',len(bites),'\nresulting padding:',bites)
+        #!! to be able to see the result of padding re-open this::
+        #print('with length: ',len(bites),'\nresulting padding:',bites)
         #return bites
         return bites
 
@@ -247,9 +247,12 @@ class Sha256:
               Matrix[column][word]=wordConverter( [ message[first], message[first+1], message[first+2], message[first+3] ] )
         #parse every object into 16, 32-bit object
         #did already while convertToBites automatically
-        print("resulting parsing:")
-        for i in Matrix:
-          print(i)
+        
+        #!! to be able to see the result of parsing re-open this::
+        #print("resulting parsing:")
+        #for i in Matrix:
+        #  print(i)
+        
         #return bit matrix
         return Matrix
 
@@ -263,6 +266,7 @@ class Sha256:
             Note that:
              * In some parts of the implementation here you will see ( & 0xFFFFFFFF ), this is implemented since we only want 8decimal, with overflows...
              * since digest_size -word length in bits- is 32 bits. 32bit=2^32=16^8, so we need 8 decimals in hexadecimals.
+             * if there is any addition or extraction on words(aka. 32-bits digest sized...) you need to use it...
         """
         #for ease transfer the values of inital hashvalues to Array, which we also use both intermediate, and final values...
         H=self.initialHashValues.copy()
@@ -300,7 +304,8 @@ class Sha256:
                 b = a
                 a = T1 + T2  & 0xFFFFFFFF  
 
-                print(t,":\t", hex(a),hex(b),hex(c),hex(d),hex(e),hex(f),hex(g),hex(h))
+                #to be able to see every iteration as a list re-open this::
+                #print(M,".",t,":\t", hex(a),hex(b),hex(c),hex(d),hex(e),hex(f),hex(g),hex(h))
 
             #Compute the intermediate hash value H(i):
             H[ 0 ]= a + H[ 0 ] &0xFFFFFFFF  
@@ -314,7 +319,7 @@ class Sha256:
 
             messageBlocks.append(H.copy())
         #After the above computations have been sequentially performed for all of the blocks in the message, the final output is calculated.
-        print(messageBlocks)
+        #print(messageBlocks)
         lastHash=messageBlocks[len(messageBlocks)-1]
         asHex=[0 for i in range(len(lastHash))]
         #for print as hex
@@ -322,11 +327,23 @@ class Sha256:
             asHex[e]=hex(lastHash[e]) 
         return asHex
  
-##test
+### tests ###
+#one block
 test=Sha256("abc")
 for i in test.sha256:
   print(i)
+
+#multi block
 print("\t**********************************************************************************************************")
-test2=Sha256("abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnjjjjopqabcdbcdecdefdefgefghfghighipppyjhijkijkljkllllmklmnlmnomnopnopq")
+test2=Sha256("abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq")
 for i in test2.sha256:
+  print(i)
+
+#long input len=1.000.000
+print("\t**********************************************************************************************************")
+a=""
+for i in range(1000000):
+    a+="a"
+test3=Sha256(a)
+for i in test3.sha256:
   print(i)
